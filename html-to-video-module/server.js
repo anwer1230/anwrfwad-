@@ -16,12 +16,18 @@ app.post("/api/render", async (req, res) => {
     width = 1920,
     height = 1080,
     fps = 30,
-    duration = 5,
+    duration = 10,
+    durationMode = "exact",
     quality = "standard",
     format = "mp4",
     videoFrameFormat = "png",
     deviceScaleFactor = 1,
     removeMargins = true,
+    audioPath,
+    ttsText,
+    voiceName = "Kore",
+    audioFitMode = "fit_pad_trim",
+    audioVolume = 1.0,
   } = req.body || {};
 
   if (!html) {
@@ -45,11 +51,17 @@ app.post("/api/render", async (req, res) => {
       height,
       fps,
       duration,
+      durationMode,
       quality,
       format,
       videoFrameFormat,
       deviceScaleFactor,
       removeMargins,
+      audioPath,
+      ttsText,
+      voiceName,
+      audioFitMode,
+      audioVolume,
     });
 
     res.download(result.outputPath, `video-${timestamp}.${ext}`);
