@@ -573,6 +573,7 @@
     <button type="button" onclick="saveData()" class="success">💾 حفظ</button>
     <button type="button" id="btnPreviewToggle" class="preview-btn" onclick="togglePrintPreview(true)">👁️ معاينة قبل الطباعة</button>
     <button type="button" onclick="exportPDF()" class="warning">📄 تصدير PDF</button>
+    <button type="button" onclick="EduCanvaStudio.open('reports')" style="background:linear-gradient(135deg,#00c4cc,#7c3aed);color:#fff;">🎨 قوالب كانفا</button>
     <button type="button" onclick="loadData()">🔄 استرجاع</button>
     <button type="button" onclick="addNewPage()" class="teal-btn">➕ إضافة صفحة</button>
     <button type="button" onclick="addNewSection()">➕ إضافة قسم/تقرير</button>
@@ -2398,7 +2399,17 @@ function compressImageDataUrl(dataUrl, maxDim = 1200, quality = 0.84) {
 
 function handleImageUpload(event) {
     const files = Array.from(event.target.files || []);
+    event.target.value = '';
     if (!files.length) return;
+    if (window.EduImageCropper) {
+        EduImageCropper.openQueue(files, async (croppedUrl) => {
+            const optimized = await compressImageDataUrl(croppedUrl);
+            currentImages.push(optimized);
+            renderPreviews();
+            setStatus('✅ تم قص وتجهيز الصورة للشاهد');
+        });
+        return;
+    }
     setStatus('⏳ جاري تجهيز الصور...');
     Promise.all(files.map(file => new Promise((resolve) => {
         const reader = new FileReader();
@@ -2413,7 +2424,16 @@ function handleImageUpload(event) {
         renderPreviews();
         setStatus(`✅ تم تجهيز ${files.length} صورة للشاهد`);
     });
-    event.target.value = '';
+}
+
+function cropExistingReportImage(idx) {
+    const src = currentImages[idx];
+    if (!src || !window.EduImageCropper) return;
+    EduImageCropper.cropExisting(src, async (croppedUrl) => {
+        currentImages[idx] = await compressImageDataUrl(croppedUrl);
+        renderPreviews();
+        setStatus('✅ تم تحديث الجزء المقصوص من الصورة');
+    });
 }
 
 function renderPreviews() {
@@ -2425,12 +2445,23 @@ function renderPreviews() {
         const imgEl = document.createElement('img');
         imgEl.src = img;
         imgEl.alt = 'معاينة';
+
+        const cropBtn = document.createElement('button');
+        cropBtn.type = 'button';
+        cropBtn.className = 'remove-img';
+        cropBtn.style.cssText = 'right:auto;left:3px;background:#2563eb;';
+        cropBtn.title = 'قص الصورة';
+        cropBtn.textContent = '✂️';
+        cropBtn.onclick = () => cropExistingReportImage(idx);
+
         const rmBtn = document.createElement('button');
         rmBtn.type = 'button';
         rmBtn.className = 'remove-img';
         rmBtn.textContent = '✕';
         rmBtn.onclick = () => removeImage(idx);
+
         item.appendChild(imgEl);
+        item.appendChild(cropBtn);
         item.appendChild(rmBtn);
         grid.appendChild(item);
     });
@@ -3058,6 +3089,13 @@ window.addEventListener('load', () => {
         });
     }
 });
+</script>
+<script src="/static/js/edu_image_cropper.js"></script>
+<script src="/static/js/edu_canva_studio.js"></script>
+<script>
+window.openEduCanvaStudio = function() {
+    if (window.EduCanvaStudio) window.EduCanvaStudio.open('reports');
+};
 </script>
 
 </body>
